@@ -1,7 +1,7 @@
 import is from '@sindresorhus/is';
 import type { PackageRule, PackageRuleInputConfig } from '../../config/types';
+import { matchRegexOrGlobList } from '../string-match';
 import { Matcher } from './base';
-import { anyMatchRegexOrMinimatch } from './match';
 
 export class RepositoriesMatcher extends Matcher {
   override matches(
@@ -16,7 +16,7 @@ export class RepositoriesMatcher extends Matcher {
       return false;
     }
 
-    return anyMatchRegexOrMinimatch(repository, matchRepositories);
+    return matchRegexOrGlobList(repository, matchRepositories);
   }
 
   override excludes(
@@ -31,6 +31,6 @@ export class RepositoriesMatcher extends Matcher {
       return false;
     }
 
-    return anyMatchRegexOrMinimatch(repository, excludeRepositories);
+    return matchRegexOrGlobList(repository, excludeRepositories);
   }
 }
