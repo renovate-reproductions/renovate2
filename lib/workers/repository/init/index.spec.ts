@@ -1,4 +1,5 @@
-import { RenovateConfig, logger, mocked, partial } from '../../../../test/util';
+import type { RenovateConfig } from '../../../../test/util';
+import { logger, mocked, partial } from '../../../../test/util';
 import { GlobalConfig } from '../../../config/global';
 import * as _secrets from '../../../config/secrets';
 import * as _onboarding from '../onboarding/branch';
@@ -7,16 +8,16 @@ import * as _config from './config';
 import * as _merge from './merge';
 import { initRepo } from '.';
 
-jest.mock('../../../util/git');
-jest.mock('../onboarding/branch');
-jest.mock('../configured');
-jest.mock('../init/apis');
-jest.mock('../init/config');
-jest.mock('../init/merge');
-jest.mock('../../../config/secrets');
-jest.mock('../../../modules/platform', () => ({
-  platform: { initRepo: jest.fn() },
-  getPlatformList: jest.fn(),
+vi.mock('../../../util/git');
+vi.mock('../onboarding/branch');
+vi.mock('../configured');
+vi.mock('../init/apis');
+vi.mock('../init/config');
+vi.mock('../init/merge');
+vi.mock('../../../config/secrets');
+vi.mock('../../../modules/platform', () => ({
+  platform: { initRepo: vi.fn() },
+  getPlatformList: vi.fn(),
 }));
 
 const apis = mocked(_apis);
@@ -38,7 +39,7 @@ describe('workers/repository/init/index', () => {
     it('runs', async () => {
       apis.initApis.mockResolvedValue(partial<_apis.WorkerPlatformConfig>());
       onboarding.checkOnboardingBranch.mockResolvedValueOnce({});
-      config.getRepoConfig.mockResolvedValueOnce({});
+      config.getRepoConfig.mockResolvedValueOnce({ mode: 'silent' });
       merge.mergeRenovateConfig.mockResolvedValueOnce({});
       secrets.applySecretsToConfig.mockReturnValueOnce(
         partial<RenovateConfig>(),
@@ -60,10 +61,12 @@ describe('workers/repository/init/index', () => {
       );
       await initRepo({});
       expect(logger.logger.warn).toHaveBeenCalledWith(
-        "Configuration option 'filterUnavailableUsers' is not supported on the current platform 'undefined'.",
+        { platform: undefined },
+        "Configuration option 'filterUnavailableUsers' is not supported on the current platform.",
       );
       expect(logger.logger.warn).toHaveBeenCalledWith(
-        "Configuration option 'expandCodeOwnersGroups' is not supported on the current platform 'undefined'.",
+        { platform: undefined },
+        "Configuration option 'expandCodeOwnersGroups' is not supported on the current platform.",
       );
     });
   });

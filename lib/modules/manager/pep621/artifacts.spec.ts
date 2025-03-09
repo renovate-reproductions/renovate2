@@ -1,6 +1,6 @@
 import { codeBlock } from 'common-tags';
-import { mockDeep } from 'jest-mock-extended';
 import { join } from 'upath';
+import { mockDeep } from 'vitest-mock-extended';
 import { mockExecAll } from '../../../../test/exec-util';
 import { fs, mockedFunction } from '../../../../test/util';
 import { GlobalConfig } from '../../../config/global';
@@ -9,8 +9,8 @@ import { getPkgReleases as _getPkgReleases } from '../../datasource';
 import type { UpdateArtifactsConfig } from '../types';
 import { updateArtifacts } from './artifacts';
 
-jest.mock('../../../util/fs');
-jest.mock('../../datasource', () => mockDeep());
+vi.mock('../../../util/fs');
+vi.mock('../../datasource', () => mockDeep());
 
 const getPkgReleases = mockedFunction(_getPkgReleases);
 
@@ -127,7 +127,7 @@ requires-python = "<3.9"
             '&& ' +
             'install-tool pdm v2.5.0 ' +
             '&& ' +
-            'pdm update --no-sync dep1' +
+            'pdm update --no-sync --update-eager dep1' +
             '"',
           options: {
             cwd: '/tmp/github/some/repo',

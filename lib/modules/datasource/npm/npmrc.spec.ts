@@ -8,7 +8,7 @@ import {
   setNpmrc,
 } from './npmrc';
 
-jest.mock('../../../util/sanitize');
+vi.mock('../../../util/sanitize');
 
 const sanitize = mocked(_sanitize);
 
@@ -136,8 +136,8 @@ describe('modules/datasource/npm/npmrc', () => {
               "matchDatasources": [
                 "npm",
               ],
-              "matchPackagePrefixes": [
-                "@fontawesome/",
+              "matchPackageNames": [
+                "@fontawesome/**",
               ],
               "registryUrls": [
                 "https://npm.fontawesome.com/",

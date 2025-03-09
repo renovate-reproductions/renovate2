@@ -1,6 +1,6 @@
 import os from 'node:os';
-import { mockDeep } from 'jest-mock-extended';
 import { join } from 'upath';
+import { mockDeep } from 'vitest-mock-extended';
 import {
   envMock,
   mockExecAll,
@@ -24,10 +24,10 @@ import type { StatusResult } from '../../../util/git/types';
 import { getPkgReleases } from '../../datasource';
 import { updateArtifacts } from '.';
 
-jest.mock('../../../util/fs');
-jest.mock('../../../util/git');
-jest.mock('../../../util/exec/env');
-jest.mock('../../datasource', () => mockDeep());
+vi.mock('../../../util/fs');
+vi.mock('../../../util/git');
+vi.mock('../../../util/exec/env');
+vi.mock('../../datasource', () => mockDeep());
 
 process.env.CONTAINERBASE = 'true';
 
@@ -39,7 +39,7 @@ const adminConfig: RepoGlobalConfig = {
   dockerSidecarImage: 'ghcr.io/containerbase/sidecar',
 };
 
-const osPlatformSpy = jest.spyOn(os, 'platform');
+const osPlatformSpy = vi.spyOn(os, 'platform');
 
 describe('modules/manager/gradle/artifacts', () => {
   beforeEach(() => {
@@ -79,8 +79,7 @@ describe('modules/manager/gradle/artifacts', () => {
       }),
     );
 
-    // TODO: fix types, jest is using wrong overload (#22198)
-    fs.readLocalFile.mockImplementation((fileName: string): Promise<any> => {
+    fs.readLocalFile.mockImplementation((fileName: string): Promise<string> => {
       let content = '';
       if (fileName === 'gradle.lockfile') {
         content = 'New gradle.lockfile';
@@ -592,7 +591,7 @@ describe('modules/manager/gradle/artifacts', () => {
       ]);
       expect(execSnapshots).toMatchObject([
         {
-          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 help',
+          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 dependencies',
           options: {
             cwd: '/tmp/github/some/repo',
             stdio: ['pipe', 'ignore', 'pipe'],
@@ -662,7 +661,7 @@ describe('modules/manager/gradle/artifacts', () => {
           },
         },
         {
-          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 help',
+          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 dependencies',
           options: {
             cwd: '/tmp/github/some/repo',
             stdio: ['pipe', 'ignore', 'pipe'],
@@ -705,7 +704,7 @@ describe('modules/manager/gradle/artifacts', () => {
 
       expect(execSnapshots).toMatchObject([
         {
-          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 help',
+          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256 dependencies',
           options: {
             cwd: '/tmp/github/some/repo',
             stdio: ['pipe', 'ignore', 'pipe'],
@@ -747,7 +746,7 @@ describe('modules/manager/gradle/artifacts', () => {
 
       expect(execSnapshots).toMatchObject([
         {
-          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256,pgp help',
+          cmd: './gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256,pgp dependencies',
           options: {
             cwd: '/tmp/github/some/repo',
             stdio: ['pipe', 'ignore', 'pipe'],

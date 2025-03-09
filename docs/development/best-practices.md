@@ -13,7 +13,7 @@ Some good branch names:
 
 - `feat/13732-cacache-cleanup`
 - `fix/15431-gitea-automerge-strategy`
-- `refactor/jest-reset-mocks`
+- `refactor/vitest-reset-mocks`
 - `docs/rewrite-packageRules-section`
 
 Avoid branch names like `patch-1`.
@@ -29,14 +29,14 @@ Read the [GitHub Docs, renaming a branch](https://docs.github.com/en/repositorie
 - Prefer `interface` over `type` for TypeScript type declarations
 - Avoid [Enums](https://github.com/renovatebot/renovate/issues/13743), use unions or [immutable objects](https://github.com/renovatebot/renovate/blob/5043379847818ac1fa71ff69c098451975e95710/lib/modules/versioning/pep440/range.ts#L8-L20) instead
 - Always add unit tests for full code coverage
-  - Only use `istanbul` comments for unreachable code coverage that is needed for `codecov` completion
-  - Use descriptive `istanbul` comments
+  - Only use `v8` comments for unreachable code coverage that is needed for `codecov` completion
+  - Use descriptive `v8` comments
 - Avoid cast or prefer `x as T` instead of `<T>x` cast
 - Prefer `satisfies` operator over `as`, read the [TypeScript release notes for `satisfies` operator](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator) to learn more
 - Avoid `Boolean` instead use `is` functions from `@sindresorhus/is` package, for example: `is.string`
 
 ```ts
-// istanbul ignore next: can never happen
+/* v8 ignore next -- can never happen */
 ```
 
 ### Functions
@@ -157,13 +157,11 @@ Avoid refactoring the code and tests at the same time, this can mask regression 
 For `WARN`, `ERROR` and `FATAL` log messages use logger metadata.
 Also use logger metadata the result is a complex metadata object needing a multiple-line pretty stringification.
 
-For `INFO` log messages inline the metadata into the log message.
-Also inline the metadata if the metadata object is complex.
+For `INFO` and `DEBUG` log messages inline the metadata into the log message where feasible.
+It is OK to not inline metadata if it's complex, but in that case first think whether that much information really needs to be logged.
 
 `WARN`, `ERROR` and `FATAL` messages are often used in metrics or error catching services.
-These log messages should have a consistent `msg` component, so they can be automatically grouped or associated.
-Metadata that's separate from its message is hard for humans to read.
-Try to combine the metadata into the message, unless it's too complex to do so.
+These log messages should have a static `msg` component, so they can be automatically grouped or associated.
 
 Good:
 
@@ -282,12 +280,12 @@ if (end) {
 
 - Separate the _Arrange_, _Act_ and _Assert_ phases with newlines
 - Use `it.each` rather than `test.each`
-- Prefer [Tagged Template Literal](https://jestjs.io/docs/api#2-testeachtablename-fn-timeout) style for `it.each`, Prettier will help with formatting
+- Prefer [Tagged Template Literal](https://vitest.dev/api/#test-each) style for `it.each`, Prettier will help with formatting
   - See [Example](https://github.com/renovatebot/renovate/blob/768e178419437a98f5ce4996bafd23f169e530b4/lib/modules/platform/util.spec.ts#L8-L18)
 - Mock Date/Time when testing a Date/Time dependent module
   - For `Luxon` mocking see [Example](https://github.com/renovatebot/renovate/blob/5043379847818ac1fa71ff69c098451975e95710/lib/modules/versioning/distro.spec.ts#L7-L10)
-- Prefer `jest.spyOn` for mocking single functions, or mock entire modules
-  - Avoid overwriting functions, for example: (`func = jest.fn();`)
+- Prefer `vi.spyOn` for mocking single functions, or mock entire modules
+  - Avoid overwriting functions, for example: (`func = vi.fn();`)
 - Prefer `toEqual`
 - Use `toMatchObject` for huge objects when only parts need to be tested
 - Avoid `toMatchSnapshot`, only use it for:
@@ -299,7 +297,10 @@ if (end) {
 
 ## Fixtures
 
-Use the `Fixture` class to load fixtures.
+Where possible, reduce the test fixture to a size where an inline `codeBlock` is possible to use instead of a separate fixture file.
+Inline `codeBlock`s improve performance plus are more readable.
+
+Use the `Fixture` class if loading fixtures from files.
 For example:
 
 ```ts

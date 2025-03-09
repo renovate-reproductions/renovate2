@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
-import { mockDeep } from 'jest-mock-extended';
+import { mockDeep } from 'vitest-mock-extended';
+import type { ExecSnapshots } from '../../../../../test/exec-util';
 import {
-  ExecSnapshots,
   envMock,
   mockExecAll,
   mockExecSequence,
@@ -16,16 +16,16 @@ import type { NpmManagerData } from '../types';
 import { getNodeToolConstraint } from './node-version';
 import * as yarnHelper from './yarn';
 
-jest.mock('fs-extra', () =>
-  jest
-    .requireActual<
-      typeof import('../../../../../test/fixtures')
-    >('../../../../../test/fixtures')
-    .fsExtra(),
+vi.mock('fs-extra', async () =>
+  (
+    await vi.importActual<typeof import('../../../../../test/fixtures')>(
+      '../../../../../test/fixtures',
+    )
+  ).fsExtra(),
 );
-jest.mock('../../../../util/exec/env');
-jest.mock('./node-version');
-jest.mock('../../../datasource', () => mockDeep());
+vi.mock('../../../../util/exec/env');
+vi.mock('./node-version');
+vi.mock('../../../datasource', () => mockDeep());
 
 delete process.env.NPM_CONFIG_CACHE;
 
@@ -42,12 +42,13 @@ const plocktest1YarnLockV1 = Fixtures.get('plocktest1/yarn.lock', '..');
 env.getChildProcessEnv.mockReturnValue(envMock.basic);
 
 describe('modules/manager/npm/post-update/yarn', () => {
-  const removeDockerContainer = jest.spyOn(docker, 'removeDockerContainer');
+  const removeDockerContainer = vi.spyOn(docker, 'removeDockerContainer');
 
   beforeEach(() => {
     delete process.env.BUILDPACK;
     delete process.env.HTTP_PROXY;
     delete process.env.HTTPS_PROXY;
+    delete process.env.RENOVATE_X_YARN_PROXY;
     Fixtures.reset();
     GlobalConfig.set({ localDir: '.', cacheDir: '/tmp/cache' });
     removeDockerContainer.mockResolvedValue();
@@ -152,6 +153,7 @@ describe('modules/manager/npm/post-update/yarn', () => {
   it('sets http proxy', async () => {
     process.env.HTTP_PROXY = 'http://proxy';
     process.env.HTTPS_PROXY = 'http://proxy';
+    process.env.RENOVATE_X_YARN_PROXY = 'true';
     GlobalConfig.set({
       localDir: '.',
       allowScripts: true,

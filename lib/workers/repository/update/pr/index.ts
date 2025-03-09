@@ -8,13 +8,13 @@ import {
 } from '../../../../constants/error-messages';
 import { pkg } from '../../../../expose.cjs';
 import { logger } from '../../../../logger';
-import {
+import type {
   PlatformPrOptions,
   Pr,
   PrDebugData,
   UpdatePrConfig,
-  platform,
 } from '../../../../modules/platform';
+import { platform } from '../../../../modules/platform';
 import { ensureComment } from '../../../../modules/platform/comment';
 import {
   getPrBodyStruct,
@@ -27,7 +27,7 @@ import { stripEmojis } from '../../../../util/emoji';
 import { fingerprint } from '../../../../util/fingerprint';
 import { getBranchLastCommitTime } from '../../../../util/git';
 import { memoize } from '../../../../util/memoize';
-import { incLimitedValue, isLimitReached } from '../../../global/limits';
+import { incCountValue, isLimitReached } from '../../../global/limits';
 import type {
   BranchConfig,
   BranchUpgradeConfig,
@@ -36,13 +36,14 @@ import type {
 import { embedChangelogs } from '../../changelog';
 import { resolveBranchStatus } from '../branch/status-checks';
 import { getPrBody } from './body';
-import { prepareLabels } from './labels';
+import { getChangedLabels, prepareLabels, shouldUpdateLabels } from './labels';
 import { addParticipants } from './participants';
 import { getPrCache, setPrCache } from './pr-cache';
 import {
   generatePrBodyFingerprintConfig,
   validatePrCache,
 } from './pr-fingerprint';
+import { tryReuseAutoclosedPr } from './pr-reuse';
 
 export function getPlatformPrOptions(
   config: RenovateConfig & PlatformPrOptions,
@@ -57,6 +58,7 @@ export function getPlatformPrOptions(
     autoApprove: !!config.autoApprove,
     automergeStrategy: config.automergeStrategy,
     azureWorkItemId: config.azureWorkItemId ?? 0,
+    bbAutoResolvePrTasks: !!config.bbAutoResolvePrTasks,
     bbUseDefaultReviewers: !!config.bbUseDefaultReviewers,
     gitLabIgnoreApprovals: !!config.gitLabIgnoreApprovals,
     forkModeDisallowMaintainerEdits: !!config.forkModeDisallowMaintainerEdits,
@@ -78,15 +80,27 @@ export type EnsurePrResult = ResultWithPr | ResultWithoutPr;
 
 export function updatePrDebugData(
   targetBranch: string,
+  labels: string[],
   debugData: PrDebugData | undefined,
 ): PrDebugData {
   const createdByRenovateVersion = debugData?.createdInVer ?? pkg.version;
   const updatedByRenovateVersion = pkg.version;
-  return {
+
+  const updatedPrDebugData: PrDebugData = {
     createdInVer: createdByRenovateVersion,
     updatedInVer: updatedByRenovateVersion,
     targetBranch,
   };
+
+  // Add labels to the debug data object.
+  // When to add:
+  // 1. Add it when a new PR is created, i.e., when debugData is undefined.
+  // 2. Add it if an existing PR already has labels in the debug data, confirming that we can update its labels.
+  if (!debugData || is.array(debugData.labels)) {
+    updatedPrDebugData.labels = labels;
+  }
+
+  return updatedPrDebugData;
 }
 
 function hasNotIgnoredReviewers(pr: Pr, config: BranchConfig): boolean {
@@ -125,7 +139,9 @@ export async function ensurePr(
   const dependencyDashboardCheck =
     config.dependencyDashboardChecks?.[config.branchName];
   // Check if PR already exists
-  const existingPr = await platform.getBranchPr(branchName, config.baseBranch);
+  const existingPr =
+    (await platform.getBranchPr(branchName, config.baseBranch)) ??
+    (await tryReuseAutoclosedPr(branchName));
   const prCache = getPrCache(branchName);
   if (existingPr) {
     logger.debug('Found existing PR');
@@ -319,6 +335,7 @@ export async function ensurePr(
     {
       debugData: updatePrDebugData(
         config.baseBranch,
+        prepareLabels(config), // include labels in debug data
         existingPr?.bodyStruct?.debugData,
       ),
     },
@@ -344,10 +361,22 @@ export async function ensurePr(
       const existingPrBodyHash = existingPr.bodyStruct?.hash;
       const newPrTitle = stripEmojis(prTitle);
       const newPrBodyHash = hashBody(prBody);
+
+      const prInitialLabels = existingPr.bodyStruct?.debugData?.labels;
+      const prCurrentLabels = existingPr.labels;
+      const configuredLabels = prepareLabels(config);
+
+      const labelsNeedUpdate = shouldUpdateLabels(
+        prInitialLabels,
+        prCurrentLabels,
+        configuredLabels,
+      );
+
       if (
         existingPr?.targetBranch === config.baseBranch &&
         existingPrTitle === newPrTitle &&
-        existingPrBodyHash === newPrBodyHash
+        existingPrBodyHash === newPrBodyHash &&
+        !labelsNeedUpdate
       ) {
         // adds or-cache for existing PRs
         setPrCache(branchName, prBodyFingerprint, false);
@@ -361,7 +390,7 @@ export async function ensurePr(
         number: existingPr.number,
         prTitle,
         prBody,
-        platformOptions: getPlatformPrOptions(config),
+        platformPrOptions: getPlatformPrOptions(config),
       };
       // PR must need updating
       if (existingPr?.targetBranch !== config.baseBranch) {
@@ -374,6 +403,36 @@ export async function ensurePr(
           'PR base branch has changed',
         );
         updatePrConfig.targetBranch = config.baseBranch;
+      }
+
+      if (labelsNeedUpdate) {
+        logger.debug(
+          {
+            branchName,
+            prCurrentLabels,
+            configuredLabels,
+          },
+          'PR labels have changed',
+        );
+
+        // Divide labels into three categories:
+        // i) addLabels: Labels that need to be added
+        // ii) removeLabels: Labels that need to be removed
+        // iii) labels: New labels for the PR, replacing the old labels array entirely.
+        // This distinction is necessary because different platforms update labels differently
+        // For more details, refer to the updatePr function of each platform.
+
+        const [addLabels, removeLabels] = getChangedLabels(
+          prCurrentLabels,
+          configuredLabels,
+        );
+
+        // for Gitea
+        updatePrConfig.labels = configuredLabels;
+
+        // for GitHub, GitLab
+        updatePrConfig.addLabels = addLabels;
+        updatePrConfig.removeLabels = removeLabels;
       }
       if (existingPrTitle !== newPrTitle) {
         logger.debug(
@@ -423,7 +482,7 @@ export async function ensurePr(
       try {
         if (
           !dependencyDashboardCheck &&
-          isLimitReached('PullRequests') &&
+          isLimitReached('ConcurrentPRs', prConfig) &&
           !config.isVulnerabilityAlert
         ) {
           logger.debug('Skipping PR - limit reached');
@@ -435,12 +494,13 @@ export async function ensurePr(
           prTitle,
           prBody,
           labels: prepareLabels(config),
-          platformOptions: getPlatformPrOptions(config),
+          platformPrOptions: getPlatformPrOptions(config),
           draftPR: !!config.draftPR,
           milestone: config.milestone,
         });
 
-        incLimitedValue('PullRequests');
+        incCountValue('ConcurrentPRs');
+        incCountValue('HourlyPRs');
         logger.info({ pr: pr?.number, prTitle }, 'PR created');
       } catch (err) {
         logger.debug({ err }, 'Pull request creation error');
@@ -514,7 +574,7 @@ export async function ensurePr(
       logger.debug('Passing error up');
       throw err;
     }
-    logger.error({ err }, 'Failed to ensure PR: ' + prTitle);
+    logger.warn({ err, prTitle }, 'Failed to ensure PR');
   }
   if (existingPr) {
     return { type: 'with-pr', pr: existingPr };

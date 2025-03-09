@@ -1,4 +1,5 @@
-import { RenovateConfig, mocked, scm } from '../../../../../test/util';
+import type { RenovateConfig } from '../../../../../test/util';
+import { mocked, scm } from '../../../../../test/util';
 import { GlobalConfig } from '../../../../config/global';
 import { logger } from '../../../../logger';
 import * as memCache from '../../../../util/cache/memory';
@@ -8,7 +9,7 @@ import { rebaseOnboardingBranch } from './rebase';
 
 const configModule = mocked(_config);
 
-jest.mock('./config');
+vi.mock('./config');
 
 describe('workers/repository/onboarding/branch/rebase', () => {
   beforeAll(() => {

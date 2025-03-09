@@ -23,6 +23,10 @@ export class CondaDatasource extends Datasource {
 
   override readonly caching = true;
 
+  override readonly sourceUrlSupport = 'package';
+  override readonly sourceUrlNote =
+    'The source URL is determined from the `dev_url` field in the results.';
+
   @cache({
     namespace: `datasource-${datasource}`,
     key: ({ registryUrl, packageName }: GetReleasesConfig) =>
@@ -48,7 +52,7 @@ export class CondaDatasource extends Datasource {
     let response: { body: CondaPackage };
 
     try {
-      response = await this.http.getJson(url);
+      response = await this.http.getJsonUnchecked(url);
 
       result.homepage = response.body.html_url;
       result.sourceUrl = response.body.dev_url;
@@ -60,7 +64,6 @@ export class CondaDatasource extends Datasource {
         result.releases.push(thisRelease);
       });
     } catch (err) {
-      // istanbul ignore else: not testable with nock
       if (err instanceof HttpError) {
         if (err.response?.statusCode !== 404) {
           throw new ExternalHostError(err);

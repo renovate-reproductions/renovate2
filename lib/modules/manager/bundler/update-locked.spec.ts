@@ -53,7 +53,7 @@ describe('modules/manager/bundler/update-locked', () => {
     expect(updateLockedDependency(config).status).toBe('unsupported');
   });
 
-  it('returns update-falied incase of errors', () => {
+  it('returns update-failed in case of errors', () => {
     const config: UpdateLockedConfig = {
       packageFile: 'Gemfile',
       lockFile: 'Gemfile.lock',
@@ -62,9 +62,9 @@ describe('modules/manager/bundler/update-locked', () => {
       newVersion: '5.2.0',
       currentVersion: '5.1.9',
     };
-    jest
-      .spyOn(lockedVersion, 'extractLockFileEntries')
-      .mockReturnValueOnce(new Error() as never);
+    vi.spyOn(lockedVersion, 'extractLockFileEntries').mockReturnValueOnce(
+      new Error() as never,
+    );
     expect(updateLockedDependency(config).status).toBe('update-failed');
   });
 });

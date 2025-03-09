@@ -4,9 +4,9 @@ import * as _html from '../../../modules/manager/html';
 import * as _fileMatch from './file-match';
 import { getManagerPackageFiles } from './manager-files';
 
-jest.mock('./file-match');
-jest.mock('../../../modules/manager/html');
-jest.mock('../../../util/fs');
+vi.mock('./file-match');
+vi.mock('../../../modules/manager/html');
+vi.mock('../../../util/fs');
 
 const fileMatch = mocked(_fileMatch);
 const html = mocked(_html);
@@ -51,14 +51,14 @@ describe('workers/repository/extract/manager-files', () => {
       };
       fileMatch.getMatchingFiles.mockReturnValue(['Dockerfile']);
       fs.readLocalFile.mockResolvedValueOnce('some content');
-      html.extractPackageFile = jest.fn(() => ({
-        deps: [{}, { replaceString: 'abc' }],
+      html.extractPackageFile = vi.fn(() => ({
+        deps: [{}, { replaceString: 'abc', packageName: 'p' }],
       })) as never;
       const res = await getManagerPackageFiles(managerConfig);
       expect(res).toEqual([
         {
           packageFile: 'Dockerfile',
-          deps: [{}, { replaceString: 'abc' }],
+          deps: [{}, { replaceString: 'abc', packageName: 'p', depName: 'p' }],
         },
       ]);
     });

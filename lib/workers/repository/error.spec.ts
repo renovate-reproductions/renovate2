@@ -1,4 +1,5 @@
-import { RenovateConfig, partial } from '../../../test/util';
+import type { RenovateConfig } from '../../../test/util';
+import { partial } from '../../../test/util';
 import {
   CONFIG_SECRETS_EXPOSED,
   CONFIG_VALIDATION,
@@ -33,7 +34,7 @@ import {
 import { ExternalHostError } from '../../types/errors/external-host-error';
 import handleError from './error';
 
-jest.mock('./error-config');
+vi.mock('./error-config');
 
 let config: RenovateConfig;
 

@@ -1,8 +1,9 @@
-import { RenovateConfig, git, partial } from '../../../test/util';
+import type { RenovateConfig } from '../../../test/util';
+import { git, partial } from '../../../test/util';
 import { initRepoCache } from '../cache/repository/init';
 import { detectSemanticCommits } from './semantic';
 
-jest.mock('.');
+vi.mock('.');
 
 let config: RenovateConfig;
 

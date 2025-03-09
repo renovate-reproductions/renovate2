@@ -1,10 +1,6 @@
 import type { RequestError, Response } from 'got';
-import {
-  RenovateConfig,
-  partial,
-  platform,
-  scm,
-} from '../../../../../test/util';
+import type { RenovateConfig } from '../../../../../test/util';
+import { partial, platform, scm } from '../../../../../test/util';
 import { getConfig } from '../../../../config/defaults';
 import { GlobalConfig } from '../../../../config/global';
 import { logger } from '../../../../logger';
@@ -15,7 +11,7 @@ import type { BranchConfig } from '../../../types';
 import { OnboardingState } from '../common';
 import { ensureOnboardingPr } from '.';
 
-jest.mock('../../../../util/git');
+vi.mock('../../../../util/git');
 
 describe('workers/repository/onboarding/pr/index', () => {
   describe('ensureOnboardingPr()', () => {
@@ -106,8 +102,8 @@ describe('workers/repository/onboarding/pr/index', () => {
       );
       expect(platform.createPr).toHaveBeenCalledTimes(1);
       expect(platform.createPr.mock.calls[0][0].labels).toEqual([
-        'label',
         'additional-label',
+        'label',
       ]);
     });
 

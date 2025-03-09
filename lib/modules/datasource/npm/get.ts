@@ -7,10 +7,12 @@ import { HOST_DISABLED } from '../../../constants/error-messages';
 import { logger } from '../../../logger';
 import { ExternalHostError } from '../../../types/errors/external-host-error';
 import * as packageCache from '../../../util/cache/package';
+import * as hostRules from '../../../util/host-rules';
 import type { Http } from '../../../util/http';
 import type { HttpOptions } from '../../../util/http/types';
 import { regEx } from '../../../util/regex';
 import { HttpCacheStats } from '../../../util/stats';
+import { asTimestamp } from '../../../util/timestamp';
 import { joinUrlParts } from '../../../util/url';
 import type { Release, ReleaseResult } from '../types';
 import type { CachedReleaseResult, NpmResponse } from './types';
@@ -106,9 +108,7 @@ export async function getDependency(
       delete cachedResult.cacheData;
     }
   }
-  const cacheMinutes = process.env.RENOVATE_CACHE_NPM_MINUTES
-    ? parseInt(process.env.RENOVATE_CACHE_NPM_MINUTES, 10)
-    : 15;
+  const cacheMinutes = 15;
   const softExpireAt = DateTime.local().plus({ minutes: cacheMinutes }).toISO();
   let cacheHardTtlMinutes = GlobalConfig.get('cacheHardTtlMinutes');
   if (
@@ -128,7 +128,24 @@ export async function getDependency(
       logger.trace({ packageName }, 'Using cached etag');
       options.headers = { 'If-None-Match': cachedResult.cacheData.etag };
     }
-    const raw = await http.getJson<NpmResponse>(packageUrl, options);
+
+    // set abortOnError for registry.npmjs.org if no hostRule with explicit abortOnError exists
+    if (
+      registryUrl === 'https://registry.npmjs.org' &&
+      hostRules.find({ url: 'https://registry.npmjs.org' })?.abortOnError ===
+        undefined
+    ) {
+      logger.trace(
+        { packageName, registry: 'https://registry.npmjs.org' },
+        'setting abortOnError hostRule for well known host',
+      );
+      hostRules.add({
+        matchHost: 'https://registry.npmjs.org',
+        abortOnError: true,
+      });
+    }
+
+    const raw = await http.getJsonUnchecked<NpmResponse>(packageUrl, options);
     if (cachedResult?.cacheData && raw.statusCode === 304) {
       logger.trace(`Cached npm result for ${packageName} is revalidated`);
       HttpCacheStats.incRemoteHits(packageUrl);
@@ -183,8 +200,9 @@ export async function getDependency(
         dependencies: res.versions?.[version].dependencies,
         devDependencies: res.versions?.[version].devDependencies,
       };
-      if (res.time?.[version]) {
-        release.releaseTimestamp = res.time[version];
+      const releaseTimestamp = asTimestamp(res.time?.[version]);
+      if (releaseTimestamp) {
+        release.releaseTimestamp = releaseTimestamp;
       }
       if (res.versions?.[version].deprecated) {
         release.isDeprecated = true;
@@ -229,29 +247,32 @@ export async function getDependency(
     }
     return dep;
   } catch (err) {
+    const actualError = err instanceof ExternalHostError ? err.err : err;
     const ignoredStatusCodes = [401, 402, 403, 404];
     const ignoredResponseCodes = ['ENOTFOUND'];
     if (
-      err.message === HOST_DISABLED ||
-      ignoredStatusCodes.includes(err.statusCode) ||
-      ignoredResponseCodes.includes(err.code)
+      actualError.message === HOST_DISABLED ||
+      ignoredStatusCodes.includes(actualError.statusCode) ||
+      ignoredResponseCodes.includes(actualError.code)
     ) {
       return null;
     }
-    if (uri.host === 'registry.npmjs.org') {
+
+    if (err instanceof ExternalHostError) {
       if (cachedResult) {
         logger.warn(
-          { err },
-          'npmjs error, reusing expired cached result instead',
+          { err, host: uri.host },
+          `npm host error, reusing expired cached result instead`,
         );
         delete cachedResult.cacheData;
         return cachedResult;
       }
-      // istanbul ignore if
-      if (err.name === 'ParseError' && err.body) {
-        err.body = 'err.body deleted by Renovate';
+
+      if (actualError.name === 'ParseError' && actualError.body) {
+        actualError.body = 'err.body deleted by Renovate';
+        err.err = actualError;
       }
-      throw new ExternalHostError(err);
+      throw err;
     }
     logger.debug({ err }, 'Unknown npm lookup error');
     return null;

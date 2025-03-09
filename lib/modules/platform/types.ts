@@ -47,6 +47,7 @@ export interface RepoParams {
   forkProcessing?: 'enabled' | 'disabled';
   renovateUsername?: string;
   cloneSubmodules?: boolean;
+  cloneSubmodulesFilter?: string[];
   ignorePrAuthor?: boolean;
   bbUseDevelopmentBranch?: boolean;
   includeMirrors?: boolean;
@@ -56,6 +57,7 @@ export interface PrDebugData {
   createdInVer: string;
   updatedInVer: string;
   targetBranch: string;
+  labels?: string[];
 }
 
 export interface PrBodyStruct {
@@ -95,15 +97,16 @@ export interface Issue {
   state?: string;
   title?: string;
 }
-export type PlatformPrOptions = {
+export interface PlatformPrOptions {
   autoApprove?: boolean;
   automergeStrategy?: MergeStrategy;
   azureWorkItemId?: number;
   bbUseDefaultReviewers?: boolean;
+  bbAutoResolvePrTasks?: boolean;
   gitLabIgnoreApprovals?: boolean;
   usePlatformAutomerge?: boolean;
   forkModeDisallowMaintainerEdits?: boolean;
-};
+}
 
 export interface CreatePRConfig {
   sourceBranch: string;
@@ -111,21 +114,43 @@ export interface CreatePRConfig {
   prTitle: string;
   prBody: string;
   labels?: string[] | null;
-  platformOptions?: PlatformPrOptions;
+  platformPrOptions?: PlatformPrOptions;
   draftPR?: boolean;
   milestone?: number;
 }
 export interface UpdatePrConfig {
   number: number;
-  platformOptions?: PlatformPrOptions;
+  platformPrOptions?: PlatformPrOptions;
   prTitle: string;
   prBody?: string;
   state?: 'open' | 'closed';
   targetBranch?: string;
+
+  /**
+   * This field allows for label management and is designed to
+   * accommodate the different label update methods on various platforms.
+   *
+   * - For Gitea, labels are updated by replacing the entire labels array.
+   * - In the case of GitHub and GitLab, specific endpoints exist
+   *   for adding and removing labels.
+   */
+  labels?: string[] | null;
+
+  /**
+   * Specifies an array of labels to be added.
+   * @see {@link labels}
+   */
+  addLabels?: string[] | null;
+
+  /**
+   * Specifies an array of labels to be removed.
+   * @see {@link labels}
+   */
+  removeLabels?: string[] | null;
 }
 export interface ReattemptPlatformAutomergeConfig {
   number: number;
-  platformOptions?: PlatformPrOptions;
+  platformPrOptions?: PlatformPrOptions;
 }
 export interface EnsureIssueConfig {
   title: string;
@@ -178,8 +203,19 @@ export type EnsureCommentRemovalConfig =
 
 export type EnsureIssueResult = 'updated' | 'created';
 
+export type RepoSortMethod =
+  | 'alpha'
+  | 'created'
+  | 'updated'
+  | 'size'
+  | 'id'
+  | null;
+
+export type SortMethod = 'asc' | 'desc' | null;
 export interface AutodiscoverConfig {
   topics?: string[];
+  sort?: RepoSortMethod;
+  order?: SortMethod;
   includeMirrors?: boolean;
   namespaces?: string[];
   projects?: string[];
@@ -215,6 +251,7 @@ export interface Platform {
   getRepos(config?: AutodiscoverConfig): Promise<string[]>;
   getBranchForceRebase?(branchName: string): Promise<boolean>;
   deleteLabel(number: number, label: string): Promise<void>;
+  addLabel?(number: number, label: string): Promise<void>;
   setBranchStatus(branchStatusConfig: BranchStatusConfig): Promise<void>;
   getBranchStatusCheck(
     branchName: string,
@@ -238,15 +275,19 @@ export interface Platform {
     internalChecksAsSuccess: boolean,
   ): Promise<BranchStatus>;
   getBranchPr(branchName: string, targetBranch?: string): Promise<Pr | null>;
+  tryReuseAutoclosedPr?(pr: Pr): Promise<Pr | null>;
   initPlatform(config: PlatformParams): Promise<PlatformResult>;
   filterUnavailableUsers?(users: string[]): Promise<string[]>;
   commitFiles?(config: CommitFilesConfig): Promise<LongCommitSha | null>;
   expandGroupMembers?(reviewersOrAssignees: string[]): Promise<string[]>;
+
+  maxBodyLength(): number;
+  labelCharLimit?(): number;
 }
 
 export interface PlatformScm {
   isBranchBehindBase(branchName: string, baseBranch: string): Promise<boolean>;
-  isBranchModified(branchName: string): Promise<boolean>;
+  isBranchModified(branchName: string, baseBranch: string): Promise<boolean>;
   isBranchConflicted(baseBranch: string, branch: string): Promise<boolean>;
   branchExists(branchName: string): Promise<boolean>;
   getBranchCommit(branchName: string): Promise<LongCommitSha | null>;

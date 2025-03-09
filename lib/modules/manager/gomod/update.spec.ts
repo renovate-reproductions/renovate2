@@ -32,6 +32,18 @@ describe('modules/manager/gomod/update', () => {
       expect(res).toContain(upgrade.newValue);
     });
 
+    it('replaces go toolchain', () => {
+      const upgrade = {
+        depName: 'go',
+        managerData: { lineNumber: 134 },
+        newValue: '1.22.2',
+        depType: 'toolchain',
+      };
+      const res = updateDependency({ fileContent: gomod3, upgrade });
+      expect(res).not.toEqual(gomod3);
+      expect(res).toContain(upgrade.newValue);
+    });
+
     it('replaces two values in one file', () => {
       const upgrade1 = {
         depName: 'github.com/pkg/errors',
@@ -354,7 +366,7 @@ describe('modules/manager/gomod/update', () => {
 
     it('handles multiline replace update', () => {
       const fileContent = `
-      go 1.18
+      go 1.23
       replace (
         k8s.io/client-go => k8s.io/client-go v0.21.9
       )`;
