@@ -83,8 +83,8 @@ importers:
         specifier: 4.0.1
         version: 4.0.1
       '@renovatebot/osv-offline':
-        specifier: 1.6.2
-        version: 1.6.2
+        specifier: 1.6.5
+        version: 1.6.5
       '@renovatebot/pep440':
         specifier: 4.1.0
         version: 4.1.0
@@ -1706,12 +1706,12 @@ packages:
     resolution: {integrity: sha512-Uj52QvCuIr9qwvbPR3fymQFMwn0MIKItZrEKywNoSF7K4UVfrtBW3DGVQ9KZ2D5tFR3LgrlPdhNSYEkEVAQ4OA==}
     engines: {node: ^20.9.0 || ^22.11.0, pnpm: ^9.0.0}
 
-  '@renovatebot/osv-offline-db@1.7.2':
-    resolution: {integrity: sha512-wYD/0K/cNX1iyYBfp4EXBA5yjMA0Bjp2Np71iIUnUZyinMTm5io57ZbCl6ZEIXOB/PYmlN7to6xGGlg3JrtrqQ==}
+  '@renovatebot/osv-offline-db@1.7.3':
+    resolution: {integrity: sha512-xhFTlmZhP60n44d3voXM0WF09cJM59Ua1WhcfSYh1AiafKbTqiXQcfbDLoneLAGjYn5ZsSaN1/uIDJbGULTDfw==}
     engines: {node: '>=18.12.0'}
 
-  '@renovatebot/osv-offline@1.6.2':
-    resolution: {integrity: sha512-N7jEqJkYTykCe6DdBLnUN/v0rR1QWHMHW2jiAgiaVV9OEVLHE1OWNIhC5habKXDJZ2DHwyl8UvBi+yj6Ki6MMg==}
+  '@renovatebot/osv-offline@1.6.5':
+    resolution: {integrity: sha512-WtGzUvr1QgQZCxoeSqDcLI16otvaPzIUq/Mn+LkZZtX4pRxJ5SIiL0/Eiirc2ngAIWi2ihvnG9DHvRBK8trK2g==}
     engines: {node: '>=18.12.0'}
 
   '@renovatebot/pep440@4.1.0':
@@ -1823,8 +1823,8 @@ packages:
   '@seald-io/binary-search-tree@1.0.3':
     resolution: {integrity: sha512-qv3jnwoakeax2razYaMsGI/luWdliBLHTdC6jU55hQt1hcFqzauH/HsBollQ7IR4ySTtYhT+xyHoijpA16C+tA==}
 
-  '@seald-io/nedb@4.0.4':
-    resolution: {integrity: sha512-CUNcMio7QUHTA+sIJ/DC5JzVNNsHe743TPmC4H5Gij9zDLMbmrCT2li3eVB72/gF63BPS8pWEZrjlAMRKA8FDw==}
+  '@seald-io/nedb@4.1.1':
+    resolution: {integrity: sha512-u7fVfzKQ/3ZaIOnYQONf2lPZtGUeQtMPjfcaQkCw/GZv5dzn20qKW6sfN0NkVbr0ksJMlWcFXNGcXYsQSb1a1g==}
 
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
@@ -4713,6 +4713,10 @@ packages:
 
   luxon@3.5.0:
     resolution: {integrity: sha512-rh+Zjr6DNfUYR3bPwJEnuwDdqMbxZW7LOQfUN4B54+Cl+0o5zaU9RJ6bcidfDtC1cWCZXQ+nvX8bf6bAji37QQ==}
+    engines: {node: '>=12'}
+
+  luxon@3.6.1:
+    resolution: {integrity: sha512-tJLxrKJhO2ukZ5z0gyjY1zPh3Rh88Ej9P7jNrZiHMUXHae1yvI2imgOZtL1TO8TW6biMMKfTtAOoEJANgtWBMQ==}
     engines: {node: '>=12'}
 
   magic-string@0.30.17:
@@ -8606,17 +8610,17 @@ snapshots:
       triplesec: 4.0.3
       tweetnacl: 1.0.3
 
-  '@renovatebot/osv-offline-db@1.7.2':
+  '@renovatebot/osv-offline-db@1.7.3':
     dependencies:
-      '@seald-io/nedb': 4.0.4
+      '@seald-io/nedb': 4.1.1
 
-  '@renovatebot/osv-offline@1.6.2':
+  '@renovatebot/osv-offline@1.6.5':
     dependencies:
-      '@renovatebot/osv-offline-db': 1.7.2
+      '@renovatebot/osv-offline-db': 1.7.3
       adm-zip: 0.5.16
       fs-extra: 11.3.0
       got: 11.8.6
-      luxon: 3.5.0
+      luxon: 3.6.1
 
   '@renovatebot/pep440@4.1.0': {}
 
@@ -8683,7 +8687,7 @@ snapshots:
 
   '@seald-io/binary-search-tree@1.0.3': {}
 
-  '@seald-io/nedb@4.0.4':
+  '@seald-io/nedb@4.1.1':
     dependencies:
       '@seald-io/binary-search-tree': 1.0.3
       localforage: 1.10.0
@@ -12264,6 +12268,8 @@ snapshots:
       yallist: 4.0.0
 
   luxon@3.5.0: {}
+
+  luxon@3.6.1: {}
 
   magic-string@0.30.17:
     dependencies:
