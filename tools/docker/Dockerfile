@@ -21,7 +21,7 @@ FROM --platform=$BUILDPLATFORM ghcr.io/renovatebot/base-image:9.65.0@sha256:917a
 
 # We want a specific node version here
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.15.1
+RUN install-tool node 22.16.0
 
 # corepack is too buggy 😞
 # renovate: datasource=npm
