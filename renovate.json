@@ -79,6 +79,10 @@
       "matchPackageNames": ["*"],
       "matchBaseBranches": ["next"],
       "dependencyDashboardApproval": true
+    },
+    {
+      "matchManagers": ["*"],
+      "assignees": ["rarkins"]
     }
   ],
   "customManagers": [
